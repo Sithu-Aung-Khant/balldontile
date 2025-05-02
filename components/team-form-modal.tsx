@@ -1,9 +1,11 @@
 'use client';
 
 import type React from 'react';
-
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -14,11 +16,33 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+// import { Label } from '@/components/ui/label';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { addTeam, updateTeam } from '@/lib/features/teams/teamsSlice';
 import type { RootState } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
+
+// Define the form schema with Zod
+const teamFormSchema = z.object({
+  name: z.string().min(1, 'Team name is required'),
+  playerCount: z
+    .number()
+    .min(1, 'Team must have at least 1 player')
+    .max(30, 'Team cannot have more than 30 players'),
+  region: z.string().min(1, 'Region is required'),
+  country: z.string().min(1, 'Country is required'),
+});
+
+// Infer TypeScript type from Zod schema
+type TeamFormValues = z.infer<typeof teamFormSchema>;
 
 interface TeamFormModalProps {
   isOpen: boolean;
@@ -33,77 +57,54 @@ export default function TeamFormModal({
   mode,
   teamId,
 }: TeamFormModalProps) {
-  const [name, setName] = useState('');
-  const [region, setRegion] = useState('');
-  const [country, setCountry] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
   const dispatch = useDispatch();
   const { toast } = useToast();
   const teams = useSelector((state: RootState) => state.teams?.teams || []);
   const team = teams.find((t) => t.id === teamId);
 
+  const form = useForm<TeamFormValues>({
+    resolver: zodResolver(teamFormSchema),
+    defaultValues: {
+      name: '',
+      playerCount: 1,
+      region: '',
+      country: '',
+    },
+  });
+
   useEffect(() => {
     if (mode === 'edit' && team) {
-      setName(team.name);
-      setRegion(team.region);
-      setCountry(team.country);
+      form.reset({
+        name: team.name,
+        playerCount: team.playerCount,
+        region: team.region,
+        country: team.country,
+      });
     } else {
-      resetForm();
+      form.reset();
     }
-  }, [mode, team, isOpen]);
+  }, [mode, team, isOpen, form]);
 
-  const resetForm = () => {
-    setName('');
-    setRegion('');
-    setCountry('');
-    setErrors({});
-  };
+  const handleSubmit = async (values: TeamFormValues) => {
+    // Check for unique team name
+    const isNameTaken = teams.some(
+      (t) =>
+        t.name.toLowerCase() === values.name.toLowerCase() &&
+        (mode === 'create' || (mode === 'edit' && t.id !== teamId))
+    );
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!name.trim()) {
-      newErrors.name = 'Team name is required';
-    } else if (
-      mode === 'create' &&
-      teams.some((team) => team.name.toLowerCase() === name.toLowerCase())
-    ) {
-      newErrors.name = 'Team name must be unique';
-    } else if (
-      mode === 'edit' &&
-      teams.some(
-        (t) => t.id !== teamId && t.name.toLowerCase() === name.toLowerCase()
-      )
-    ) {
-      newErrors.name = 'Team name must be unique';
-    }
-
-    if (!region.trim()) {
-      newErrors.region = 'Region is required';
-    }
-
-    if (!country.trim()) {
-      newErrors.country = 'Country is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
+    if (isNameTaken) {
+      form.setError('name', {
+        type: 'manual',
+        message: 'Team name must be unique',
+      });
       return;
     }
 
     if (mode === 'create') {
       const newTeam = {
         id: uuidv4(),
-        name,
-        region,
-        country,
+        ...values,
         players: [],
       };
 
@@ -116,7 +117,7 @@ export default function TeamFormModal({
       dispatch(
         updateTeam({
           id: teamId,
-          changes: { name, region, country },
+          changes: values,
         })
       );
       toast({
@@ -126,7 +127,7 @@ export default function TeamFormModal({
     }
 
     onClose();
-    resetForm();
+    form.reset();
   };
 
   return (
@@ -142,57 +143,80 @@ export default function TeamFormModal({
               : 'Update the team details'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className='grid gap-4 py-4'>
-            <div className='grid gap-2'>
-              <Label htmlFor='name'>Team Name</Label>
-              <Input
-                id='name'
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder='Enter team name'
-                className={errors.name ? 'border-red-500' : ''}
-              />
-              {errors.name && (
-                <p className='text-sm text-red-500'>{errors.name}</p>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className='space-y-4'
+          >
+            <FormField
+              control={form.control}
+              name='name'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Team Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder='Enter team name' {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-            <div className='grid gap-2'>
-              <Label htmlFor='region'>Region</Label>
-              <Input
-                id='region'
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                placeholder='Enter region'
-                className={errors.region ? 'border-red-500' : ''}
-              />
-              {errors.region && (
-                <p className='text-sm text-red-500'>{errors.region}</p>
+            />
+            <FormField
+              control={form.control}
+              name='playerCount'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Player Count</FormLabel>
+                  <FormControl>
+                    <Input
+                      type='number'
+                      min={1}
+                      max={30}
+                      placeholder='Enter player count'
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-            <div className='grid gap-2'>
-              <Label htmlFor='country'>Country</Label>
-              <Input
-                id='country'
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                placeholder='Enter country'
-                className={errors.country ? 'border-red-500' : ''}
-              />
-              {errors.country && (
-                <p className='text-sm text-red-500'>{errors.country}</p>
+            />
+            <FormField
+              control={form.control}
+              name='region'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Region</FormLabel>
+                  <FormControl>
+                    <Input placeholder='Enter region' {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type='button' variant='outline' onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type='submit'>
-              {mode === 'create' ? 'Create' : 'Save changes'}
-            </Button>
-          </DialogFooter>
-        </form>
+            />
+            <FormField
+              control={form.control}
+              name='country'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Country</FormLabel>
+                  <FormControl>
+                    <Input placeholder='Enter country' {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type='button' variant='outline' onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type='submit'>
+                {mode === 'create' ? 'Create' : 'Save changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
