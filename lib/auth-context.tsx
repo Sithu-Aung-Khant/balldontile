@@ -23,19 +23,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user is already logged in
     const token = localStorage.getItem('auth_token');
     const storedUser = localStorage.getItem('auth_user');
 
     if (token && storedUser) {
       try {
-        // Validate token (in a real app, you'd verify the JWT)
         const tokenData = JSON.parse(atob(token));
-        if (tokenData.exp > Date.now()) {
+        if (tokenData.exp > Date.now() / 1000) {
           setIsAuthenticated(true);
           setUser(storedUser);
         } else {
-          // Token expired
           localStorage.removeItem('auth_token');
           localStorage.removeItem('auth_user');
         }
