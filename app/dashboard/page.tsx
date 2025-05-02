@@ -2,15 +2,15 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
+import { useAppSelector } from '@/app/redux';
 import DashboardLayout from '@/components/dashboard-layout';
 import PlayersList from '@/components/players-list';
 import TeamsList from '@/components/teams-list';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function Dashboard() {
-  const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   useEffect(() => {
     if (!isAuthenticated) {

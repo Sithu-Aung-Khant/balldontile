@@ -1,8 +1,7 @@
 'use client';
 
 import type React from 'react';
-import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,7 +15,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-// import { Label } from '@/components/ui/label';
 import {
   Form,
   FormControl,
@@ -25,18 +23,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { addTeam, updateTeam } from '@/lib/features/teams/teamsSlice';
-import type { RootState } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
-// import { v4 as uuidv4 } from 'uuid';
-import { Team } from '@/lib/features/teams/teamsSlice';
+
 // Define the form schema with Zod
 const teamFormSchema = z.object({
   name: z.string().min(1, 'Team name is required'),
-  playerCount: z
-    .number()
-    .min(1, 'Team must have at least 1 player')
-    .max(30, 'Team cannot have more than 30 players'),
+  playerCount: z.number().max(30, 'Team cannot have more than 30 players'),
   region: z.string().min(1, 'Region is required'),
   country: z.string().min(1, 'Country is required'),
 });
@@ -57,9 +49,8 @@ export default function TeamFormModal({
   mode,
   team,
 }: TeamFormModalProps) {
-  const dispatch = useDispatch();
   const { toast } = useToast();
-  const teams = useSelector((state: RootState) => state.teams?.teams || []);
+  const [teams, setTeams] = useState<Team[]>([]); // Local state for teams
 
   const form = useForm<TeamFormValues>({
     resolver: zodResolver(teamFormSchema),
@@ -109,18 +100,28 @@ export default function TeamFormModal({
         players: [],
       };
 
-      dispatch(addTeam(newTeam));
+      // Add team to local state (replace with API call if needed)
+      setTeams((prev) => [...prev, newTeam]);
+
       toast({
         title: 'Team created',
         description: 'The team has been successfully created',
       });
     } else if (mode === 'edit' && team?.id) {
-      dispatch(
-        updateTeam({
-          id: team.id,
-          changes: values,
-        })
+      // Update team in local state (replace with API call if needed)
+      setTeams((prev) =>
+        prev.map((t) =>
+          t.id === team.id
+            ? {
+                ...t,
+                ...values,
+                full_name: values.name,
+                division: values.region,
+              }
+            : t
+        )
       );
+
       toast({
         title: 'Team updated',
         description: 'The team has been successfully updated',

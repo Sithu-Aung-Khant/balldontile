@@ -3,23 +3,25 @@
 import type React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBasketball } from '@fortawesome/free-solid-svg-icons';
-import { useAuth } from '@/lib/auth-context';
+import { useAppSelector, useAppDispatch } from '@/app/redux';
 import { Button } from '@/components/ui/button';
 import { LogOut, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { logout } from '@/state';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, logout } = useAuth();
+  const user = useAppSelector((state) => state.auth.user);
+  const dispatch = useAppDispatch();
   const { toast } = useToast();
   const router = useRouter();
 
   const handleLogout = () => {
-    logout();
+    dispatch(logout());
     toast({
       title: 'Logged out',
       description: 'You have been successfully logged out',

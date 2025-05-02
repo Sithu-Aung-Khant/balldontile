@@ -1,13 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
+import { useAppSelector } from '@/app/redux';
 import LoginForm from '@/components/login-form';
 import { useEffect } from 'react';
 
 export default function Home() {
-  const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   useEffect(() => {
     if (isAuthenticated) {

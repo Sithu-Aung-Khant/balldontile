@@ -1,6 +1,5 @@
 'use client';
 
-import { useDispatch, useSelector } from 'react-redux';
 import {
   Dialog,
   DialogContent,
@@ -9,31 +8,40 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import type { RootState } from '@/lib/store';
-import { removePlayerFromTeam } from '@/lib/features/teams/teamsSlice';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Trash2 } from 'lucide-react';
+
+interface Player {
+  id: number;
+  name: string;
+  position: string;
+  team: string;
+}
 
 interface TeamPlayersDialogProps {
   isOpen: boolean;
   onClose: () => void;
   teamId: string;
+  team: {
+    id: string;
+    name: string;
+    players: Player[];
+  };
+  onRemovePlayer: (teamId: string, playerId: number) => void; // Callback for removing a player
 }
 
 export default function TeamPlayersDialog({
   isOpen,
   onClose,
   teamId,
+  team,
+  onRemovePlayer,
 }: TeamPlayersDialogProps) {
-  const team = useSelector((state: RootState) =>
-    (state.teams?.teams || []).find((t) => t.id === teamId)
-  );
-  const dispatch = useDispatch();
   const { toast } = useToast();
 
   const handleRemovePlayer = (playerId: number) => {
-    dispatch(removePlayerFromTeam({ teamId, playerId }));
+    onRemovePlayer(teamId, playerId); // Call the callback to remove the player
     toast({
       title: 'Player removed',
       description: 'The player has been removed from the team',

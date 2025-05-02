@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import {
   Card,
   CardContent,
@@ -13,8 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserPlus } from 'lucide-react';
-import { addPlayerToTeam } from '@/lib/features/teams/teamsSlice';
-import type { RootState } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -60,17 +57,10 @@ export default function PlayersList() {
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('');
+  const [playersInTeams, setPlayersInTeams] = useState<number[]>([]); // Local state for players in teams
   const observer = useRef<IntersectionObserver | null>(null);
   const lastPlayerRef = useRef<HTMLDivElement | null>(null);
-  const dispatch = useDispatch();
   const { toast } = useToast();
-
-  const teams = useSelector((state: RootState) => state.teams?.teams || []);
-  const playersInTeams = useSelector((state: RootState) =>
-    (state.teams?.teams || []).flatMap((team) =>
-      team.players.map((player) => player.id)
-    )
-  );
 
   const fetchPlayers = async (cursor: number | null = null) => {
     try {
@@ -131,17 +121,8 @@ export default function PlayersList() {
       return;
     }
 
-    dispatch(
-      addPlayerToTeam({
-        teamId: selectedTeam,
-        player: {
-          id: player.id,
-          name: `${player.first_name} ${player.last_name}`,
-          position: player.position || 'N/A',
-          team: player.team.full_name,
-        },
-      })
-    );
+    // Add player to local state (replace with API call if needed)
+    setPlayersInTeams((prev) => [...prev, player.id]);
 
     toast({
       title: 'Success',
@@ -159,11 +140,9 @@ export default function PlayersList() {
               <SelectValue placeholder='Select a team' />
             </SelectTrigger>
             <SelectContent>
-              {teams.map((team) => (
-                <SelectItem key={team.id} value={team.id}>
-                  {team.name}
-                </SelectItem>
-              ))}
+              {/* Replace with your teams data */}
+              <SelectItem value='team1'>Team 1</SelectItem>
+              <SelectItem value='team2'>Team 2</SelectItem>
             </SelectContent>
           </Select>
         </div>

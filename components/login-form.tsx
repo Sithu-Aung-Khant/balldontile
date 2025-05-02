@@ -1,10 +1,9 @@
 'use client';
 
-import type React from 'react';
-
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
+import { useDispatch } from 'react-redux';
+import { login } from '@/state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,8 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function LoginForm() {
   const [username, setUsername] = useState('');
-  const { login } = useAuth();
-  // const { login, isAuthenticated } = useAuth();
+  const dispatch = useDispatch();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -37,11 +35,10 @@ export default function LoginForm() {
       return;
     }
 
-    // Generate a mock JWT token
     const token = btoa(
       JSON.stringify({ username, exp: Date.now() + 24 * 60 * 60 * 1000 })
     );
-    login(username, token);
+    dispatch(login({ username, token }));
 
     toast({
       title: 'Success',
