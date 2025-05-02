@@ -57,8 +57,8 @@ interface Player {
 export default function PlayersList() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page] = useState(1);
-  const [hasMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<number | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('');
   const observer = useRef<IntersectionObserver | null>(null);
   const lastPlayerRef = useRef<HTMLDivElement | null>(null);
@@ -72,29 +72,27 @@ export default function PlayersList() {
     )
   );
 
+  const fetchPlayers = async (cursor: number | null = null) => {
+    try {
+      const playersResponse = await api.nba.getPlayers({
+        per_page: 10,
+        cursor: cursor || undefined,
+      });
+      setPlayers((prevPlayers) =>
+        cursor
+          ? [...prevPlayers, ...playersResponse.data]
+          : playersResponse.data
+      );
+      setNextCursor(playersResponse.meta?.next_cursor || null);
+      setHasMore(playersResponse.meta?.next_cursor !== null);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching players:', error);
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTeams = async () => {
-      try {
-        const teamsResponse = await api.nba.getTeams();
-        console.log('Teams Data:', teamsResponse.data);
-      } catch (error) {
-        console.error('Error fetching teams:', error);
-      }
-    };
-
-    const fetchPlayers = async () => {
-      try {
-        const playersResponse = await api.nba.getPlayers();
-        console.log('Players Data:', playersResponse.data);
-        setPlayers(playersResponse.data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching players:', error);
-        setLoading(false);
-      }
-    };
-
-    fetchTeams();
     fetchPlayers();
   }, []);
 
@@ -105,14 +103,14 @@ export default function PlayersList() {
 
     observer.current = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && hasMore) {
-        // No more data to load since we're using mock data
+        fetchPlayers(nextCursor);
       }
     });
 
     if (lastPlayerRef.current) {
       observer.current.observe(lastPlayerRef.current);
     }
-  }, [loading, hasMore, page]);
+  }, [loading, hasMore, nextCursor]);
 
   const handleAddToTeam = (player: Player) => {
     if (!selectedTeam) {
@@ -241,6 +239,14 @@ export default function PlayersList() {
             </Card>
           ))}
       </div>
+
+      {hasMore && (
+        <div className='flex justify-center mt-4'>
+          <Button onClick={() => fetchPlayers(nextCursor)} disabled={loading}>
+            {loading ? 'Loading...' : 'Load More'}
+          </Button>
+        </div>
+      )}
 
       {!hasMore && players.length > 0 && (
         <p className='text-center text-muted-foreground mt-4'>
