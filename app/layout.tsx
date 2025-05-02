@@ -1,10 +1,9 @@
+import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/toaster';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import DashboardWrapper from './dashboardWrapper';
 import './globals.css';
-import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/lib/auth-context';
-import { StoreProvider } from '@/lib/store-provider';
-import { Toaster } from '@/components/ui/toaster';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -27,12 +26,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <StoreProvider>
-            <AuthProvider>
-              {children}
-              <Toaster />
-            </AuthProvider>
-          </StoreProvider>
+          <DashboardWrapper>
+            {children} <Toaster />
+          </DashboardWrapper>
         </ThemeProvider>
       </body>
     </html>
