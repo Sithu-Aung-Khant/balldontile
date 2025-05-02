@@ -6,7 +6,7 @@ import {
   useSelector,
   Provider,
 } from 'react-redux';
-import { globalReducer, authReducer } from '@/state';
+import { globalReducer, authReducer, teamsReducer } from '@/state';
 import { setupListeners } from '@reduxjs/toolkit/query';
 
 import {
@@ -50,6 +50,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
   global: globalReducer,
   auth: authReducer,
+  teams: teamsReducer,
 });
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 

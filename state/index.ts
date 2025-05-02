@@ -54,6 +54,50 @@ export const authSlice = createSlice({
 
 export const { login, logout } = authSlice.actions;
 
+export interface Team {
+  id: number;
+  conference: string;
+  division: string;
+  city: string;
+  name: string;
+  full_name: string;
+  abbreviation: string;
+  playerCount: number;
+  country: string;
+}
+
+export interface TeamsState {
+  teams: Team[];
+}
+
+const initialTeamsState: TeamsState = {
+  teams: [],
+};
+
+export const teamsSlice = createSlice({
+  name: 'teams',
+  initialState: initialTeamsState,
+  reducers: {
+    addTeam: (state, action: PayloadAction<Team>) => {
+      state.teams.push(action.payload);
+    },
+    updateTeam: (state, action: PayloadAction<Team>) => {
+      const index = state.teams.findIndex(
+        (team) => team.id === action.payload.id
+      );
+      if (index !== -1) {
+        state.teams[index] = action.payload;
+      }
+    },
+    deleteTeam: (state, action: PayloadAction<number>) => {
+      state.teams = state.teams.filter((team) => team.id !== action.payload);
+    },
+  },
+});
+
+export const { addTeam, updateTeam, deleteTeam } = teamsSlice.actions;
+
 // Export the reducers as named exports
 export const globalReducer = globalSlice.reducer;
 export const authReducer = authSlice.reducer;
+export const teamsReducer = teamsSlice.reducer;

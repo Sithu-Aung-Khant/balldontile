@@ -1,7 +1,7 @@
 'use client';
 
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,6 +24,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
+import { Team } from '@/state/index';
+import { useAppDispatch, useAppSelector } from '@/app/redux';
+import { addTeam, updateTeam } from '@/state';
 
 // Define the form schema with Zod
 const teamFormSchema = z.object({
@@ -41,6 +44,7 @@ interface TeamFormModalProps {
   onClose: () => void;
   mode: 'create' | 'edit';
   team?: Team;
+  onSubmit: (team: Team) => void;
 }
 
 export default function TeamFormModal({
@@ -48,9 +52,11 @@ export default function TeamFormModal({
   onClose,
   mode,
   team,
+  onSubmit,
 }: TeamFormModalProps) {
   const { toast } = useToast();
-  const [teams, setTeams] = useState<Team[]>([]); // Local state for teams
+  const dispatch = useAppDispatch();
+  const teams = useAppSelector((state) => state.teams.teams);
 
   const form = useForm<TeamFormValues>({
     resolver: zodResolver(teamFormSchema),
@@ -98,29 +104,32 @@ export default function TeamFormModal({
         full_name: values.name,
         division: values.region,
         players: [],
+        conference: '',
+        city: '',
+        abbreviation: '',
+        playerCount: values.playerCount || 0,
+        country: values.country,
       };
 
-      // Add team to local state (replace with API call if needed)
-      setTeams((prev) => [...prev, newTeam]);
+      onSubmit(newTeam);
+      dispatch(addTeam(newTeam));
 
       toast({
         title: 'Team created',
         description: 'The team has been successfully created',
       });
     } else if (mode === 'edit' && team?.id) {
-      // Update team in local state (replace with API call if needed)
-      setTeams((prev) =>
-        prev.map((t) =>
-          t.id === team.id
-            ? {
-                ...t,
-                ...values,
-                full_name: values.name,
-                division: values.region,
-              }
-            : t
-        )
-      );
+      const updatedTeam = {
+        ...team,
+        ...values,
+        full_name: values.name,
+        division: values.region,
+        playerCount: values.playerCount || 0,
+        country: values.country,
+      };
+
+      onSubmit(updatedTeam);
+      dispatch(updateTeam(updatedTeam));
 
       toast({
         title: 'Team updated',

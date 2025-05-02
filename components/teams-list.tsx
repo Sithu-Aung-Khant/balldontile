@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-// import { useDispatch, useSelector } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '@/app/redux';
+import { addTeam, updateTeam, deleteTeam } from '@/state';
 import {
   Card,
   CardContent,
@@ -19,39 +20,20 @@ import TeamPlayersDialog from '@/components/team-players-dialog';
 import { Badge } from '@/components/ui/badge';
 import { BalldontlieAPI } from '@balldontlie/sdk';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Team } from '@/state/index';
 
 const api = new BalldontlieAPI({
   apiKey: process.env.NEXT_PUBLIC_BALLDONTLIE_API_KEY || '',
 });
 
-interface Player {
-  id: number;
-  name: string;
-  position: string;
-  team: string;
-}
-
-interface Team {
-  id: number;
-  conference: string;
-  division: string;
-  city: string;
-  name: string;
-  full_name: string;
-  abbreviation: string;
-  playerCount: number;
-  region: string;
-  country: string;
-  players: Player[];
-}
-
 export default function TeamsList() {
+  const dispatch = useAppDispatch();
+  const teams = useAppSelector((state) => state.teams.teams);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPlayersDialogOpen, setIsPlayersDialogOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
-  const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -67,12 +49,10 @@ export default function TeamsList() {
           name: team.name,
           full_name: team.full_name,
           abbreviation: team.abbreviation,
-          playerCount: 0, // Default value
-          region: team.division, // Map division to region
-          country: 'USA', // Default value
-          players: [], // Default value
+          playerCount: 0,
+          country: '',
         }));
-        setTeams(mappedTeams);
+        mappedTeams.forEach((team) => dispatch(addTeam(team)));
         setLoading(false);
       } catch (error) {
         console.error('Error fetching teams:', error);
@@ -81,7 +61,7 @@ export default function TeamsList() {
     };
 
     fetchTeams();
-  }, []);
+  }, [dispatch]);
 
   const handleOpenEditModal = (team: Team) => {
     setSelectedTeam(team.id);
@@ -100,15 +80,23 @@ export default function TeamsList() {
 
   const handleDeleteTeam = () => {
     if (selectedTeam) {
-      setTeams((prevTeams) =>
-        prevTeams.filter((team) => team.id !== selectedTeam)
-      );
+      dispatch(deleteTeam(selectedTeam));
       toast({
         title: 'Team deleted',
         description: 'The team has been successfully deleted',
       });
       setIsDeleteDialogOpen(false);
     }
+  };
+
+  const handleCreateTeam = (team: Team) => {
+    dispatch(addTeam(team));
+    setIsCreateModalOpen(false);
+  };
+
+  const handleUpdateTeam = (team: Team) => {
+    dispatch(updateTeam(team));
+    setIsEditModalOpen(false);
   };
 
   return (
@@ -203,6 +191,7 @@ export default function TeamsList() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         mode='create'
+        onSubmit={handleCreateTeam}
       />
 
       {selectedTeam && (
@@ -212,6 +201,7 @@ export default function TeamsList() {
             onClose={() => setIsEditModalOpen(false)}
             mode='edit'
             team={teams.find((t) => t.id === selectedTeam)}
+            onSubmit={handleUpdateTeam}
           />
 
           <DeleteTeamDialog
@@ -224,6 +214,16 @@ export default function TeamsList() {
             isOpen={isPlayersDialogOpen}
             onClose={() => setIsPlayersDialogOpen(false)}
             teamId={selectedTeam.toString()}
+            team={{
+              id: selectedTeam.toString(),
+              name:
+                teams.find((t) => t.id === selectedTeam)?.full_name ||
+                'Unknown Team',
+              players: [],
+            }}
+            onRemovePlayer={(teamId, playerId) => {
+              console.log(`Remove player ${playerId} from team ${teamId}`);
+            }}
           />
         </>
       )}
