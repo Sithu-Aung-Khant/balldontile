@@ -9,12 +9,14 @@ interface Player {
   team: string;
 }
 
-interface Team {
-  id: string;
+export interface Team {
+  id: number;
   name: string;
-  playerCount: number;
+  playerCount?: number;
   region: string;
   country: string;
+  full_name: string;
+  division: string;
   players: Player[];
 }
 
@@ -51,7 +53,7 @@ export const teamsSlice = createSlice({
     },
     updateTeam: (
       state,
-      action: PayloadAction<{ id: string; changes: Partial<Team> }>
+      action: PayloadAction<{ id: number; changes: Partial<Team> }>
     ) => {
       const { id, changes } = action.payload;
       const teamIndex = state.teams.findIndex((team) => team.id === id);
@@ -59,12 +61,12 @@ export const teamsSlice = createSlice({
         state.teams[teamIndex] = { ...state.teams[teamIndex], ...changes };
       }
     },
-    removeTeam: (state, action: PayloadAction<string>) => {
+    removeTeam: (state, action: PayloadAction<number>) => {
       state.teams = state.teams.filter((team) => team.id !== action.payload);
     },
     addPlayerToTeam: (
       state,
-      action: PayloadAction<{ teamId: string; player: Player }>
+      action: PayloadAction<{ teamId: number; player: Player }>
     ) => {
       const { teamId, player } = action.payload;
 
@@ -81,7 +83,7 @@ export const teamsSlice = createSlice({
     },
     removePlayerFromTeam: (
       state,
-      action: PayloadAction<{ teamId: string; playerId: number }>
+      action: PayloadAction<{ teamId: number; playerId: number }>
     ) => {
       const { teamId, playerId } = action.payload;
       const teamIndex = state.teams.findIndex((team) => team.id === teamId);

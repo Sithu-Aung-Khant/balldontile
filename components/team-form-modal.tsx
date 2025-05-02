@@ -28,8 +28,8 @@ import {
 import { addTeam, updateTeam } from '@/lib/features/teams/teamsSlice';
 import type { RootState } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
-import { v4 as uuidv4 } from 'uuid';
-
+// import { v4 as uuidv4 } from 'uuid';
+import { Team } from '@/lib/features/teams/teamsSlice';
 // Define the form schema with Zod
 const teamFormSchema = z.object({
   name: z.string().min(1, 'Team name is required'),
@@ -48,19 +48,18 @@ interface TeamFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   mode: 'create' | 'edit';
-  teamId?: string;
+  team?: Team;
 }
 
 export default function TeamFormModal({
   isOpen,
   onClose,
   mode,
-  teamId,
+  team,
 }: TeamFormModalProps) {
   const dispatch = useDispatch();
   const { toast } = useToast();
   const teams = useSelector((state: RootState) => state.teams?.teams || []);
-  const team = teams.find((t) => t.id === teamId);
 
   const form = useForm<TeamFormValues>({
     resolver: zodResolver(teamFormSchema),
@@ -75,9 +74,9 @@ export default function TeamFormModal({
   useEffect(() => {
     if (mode === 'edit' && team) {
       form.reset({
-        name: team.name,
+        name: team.full_name,
         playerCount: team.playerCount,
-        region: team.region,
+        region: team.division,
         country: team.country,
       });
     } else {
@@ -90,7 +89,7 @@ export default function TeamFormModal({
     const isNameTaken = teams.some(
       (t) =>
         t.name.toLowerCase() === values.name.toLowerCase() &&
-        (mode === 'create' || (mode === 'edit' && t.id !== teamId))
+        (mode === 'create' || (mode === 'edit' && t.id !== team?.id))
     );
 
     if (isNameTaken) {
@@ -103,8 +102,10 @@ export default function TeamFormModal({
 
     if (mode === 'create') {
       const newTeam = {
-        id: uuidv4(),
+        id: Date.now(),
         ...values,
+        full_name: values.name,
+        division: values.region,
         players: [],
       };
 
@@ -113,10 +114,10 @@ export default function TeamFormModal({
         title: 'Team created',
         description: 'The team has been successfully created',
       });
-    } else if (mode === 'edit' && teamId) {
+    } else if (mode === 'edit' && team?.id) {
       dispatch(
         updateTeam({
-          id: teamId,
+          id: team.id,
           changes: values,
         })
       );

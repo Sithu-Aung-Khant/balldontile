@@ -24,6 +24,13 @@ const api = new BalldontlieAPI({
   apiKey: process.env.NEXT_PUBLIC_BALLDONTLIE_API_KEY || '',
 });
 
+interface Player {
+  id: number;
+  name: string;
+  position: string;
+  team: string;
+}
+
 interface Team {
   id: number;
   conference: string;
@@ -32,6 +39,10 @@ interface Team {
   name: string;
   full_name: string;
   abbreviation: string;
+  playerCount: number;
+  region: string;
+  country: string;
+  players: Player[];
 }
 
 export default function TeamsList() {
@@ -48,8 +59,20 @@ export default function TeamsList() {
     const fetchTeams = async () => {
       try {
         const teamsResponse = await api.nba.getTeams();
-        console.log('Teams Data:', teamsResponse.data);
-        setTeams(teamsResponse.data);
+        const mappedTeams = teamsResponse.data.map((team) => ({
+          id: team.id,
+          conference: team.conference,
+          division: team.division,
+          city: team.city,
+          name: team.name,
+          full_name: team.full_name,
+          abbreviation: team.abbreviation,
+          playerCount: 0, // Default value
+          region: team.division, // Map division to region
+          country: 'USA', // Default value
+          players: [], // Default value
+        }));
+        setTeams(mappedTeams);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching teams:', error);
@@ -60,8 +83,8 @@ export default function TeamsList() {
     fetchTeams();
   }, []);
 
-  const handleOpenEditModal = (teamId: number) => {
-    setSelectedTeam(teamId);
+  const handleOpenEditModal = (team: Team) => {
+    setSelectedTeam(team.id);
     setIsEditModalOpen(true);
   };
 
@@ -158,7 +181,7 @@ export default function TeamsList() {
                   <Button
                     variant='outline'
                     size='icon'
-                    onClick={() => handleOpenEditModal(team.id)}
+                    onClick={() => handleOpenEditModal(team)}
                   >
                     <Edit className='h-4 w-4' />
                   </Button>
@@ -188,7 +211,7 @@ export default function TeamsList() {
             isOpen={isEditModalOpen}
             onClose={() => setIsEditModalOpen(false)}
             mode='edit'
-            teamId={selectedTeam.toString()}
+            team={teams.find((t) => t.id === selectedTeam)}
           />
 
           <DeleteTeamDialog
