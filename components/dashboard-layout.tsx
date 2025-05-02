@@ -1,10 +1,11 @@
 'use client';
 
 import type React from 'react';
-
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBasketball } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
-import { ShoppingBasketIcon as Basketball, LogOut, User } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -31,7 +32,7 @@ export default function DashboardLayout({
       <header className='border-b'>
         <div className='container mx-auto px-4 py-4 flex justify-between items-center'>
           <div className='flex items-center gap-2'>
-            <Basketball className='h-6 w-6' />
+            <FontAwesomeIcon icon={faBasketball} className='h-6 w-6' />
             <h1 className='text-xl font-bold'>Basketball Team Management</h1>
           </div>
           <div className='flex items-center gap-4'>
