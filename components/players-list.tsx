@@ -24,71 +24,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { BalldontlieAPI } from '@balldontlie/sdk';
+
+const api = new BalldontlieAPI({
+  apiKey: process.env.NEXT_PUBLIC_BALLDONTLIE_API_KEY || '',
+});
 
 interface Player {
   id: number;
   first_name: string;
   last_name: string;
   position: string;
+  height: string;
+  weight: string;
+  jersey_number: string;
+  college: string | null;
+  country: string | null;
+  draft_year: number | null;
+  draft_round: number | null;
+  draft_number: number | null;
   team: {
     id: number;
-    abbreviation: string;
-    city: string;
     conference: string;
     division: string;
-    full_name: string;
+    city: string;
     name: string;
+    full_name: string;
+    abbreviation: string;
   };
 }
-
-const mockPlayers: Player[] = [
-  {
-    id: 1,
-    first_name: 'LeBron',
-    last_name: 'James',
-    position: 'SF',
-    team: {
-      id: 1,
-      abbreviation: 'LAL',
-      city: 'Los Angeles',
-      conference: 'West',
-      division: 'Pacific',
-      full_name: 'Los Angeles Lakers',
-      name: 'Lakers',
-    },
-  },
-  {
-    id: 2,
-    first_name: 'Stephen',
-    last_name: 'Curry',
-    position: 'PG',
-    team: {
-      id: 2,
-      abbreviation: 'GSW',
-      city: 'Golden State',
-      conference: 'West',
-      division: 'Pacific',
-      full_name: 'Golden State Warriors',
-      name: 'Warriors',
-    },
-  },
-  {
-    id: 3,
-    first_name: 'Kevin',
-    last_name: 'Durant',
-    position: 'PF',
-    team: {
-      id: 3,
-      abbreviation: 'BKN',
-      city: 'Brooklyn',
-      conference: 'East',
-      division: 'Atlantic',
-      full_name: 'Brooklyn Nets',
-      name: 'Nets',
-    },
-  },
-  // Add more mock players as needed
-];
 
 export default function PlayersList() {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -109,8 +73,29 @@ export default function PlayersList() {
   );
 
   useEffect(() => {
-    setPlayers(mockPlayers);
-    setLoading(false);
+    const fetchTeams = async () => {
+      try {
+        const teamsResponse = await api.nba.getTeams();
+        console.log('Teams Data:', teamsResponse.data);
+      } catch (error) {
+        console.error('Error fetching teams:', error);
+      }
+    };
+
+    const fetchPlayers = async () => {
+      try {
+        const playersResponse = await api.nba.getPlayers();
+        console.log('Players Data:', playersResponse.data);
+        setPlayers(playersResponse.data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching players:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchTeams();
+    fetchPlayers();
   }, []);
 
   useEffect(() => {

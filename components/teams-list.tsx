@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 // import { useDispatch, useSelector } from 'react-redux';
 import {
   Card,
@@ -17,71 +17,60 @@ import TeamFormModal from '@/components/team-form-modal';
 import DeleteTeamDialog from '@/components/delete-team-dialog';
 import TeamPlayersDialog from '@/components/team-players-dialog';
 import { Badge } from '@/components/ui/badge';
+import { BalldontlieAPI } from '@balldontlie/sdk';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const mockTeams = [
-  {
-    id: '1',
-    name: 'Los Angeles Lakers',
-    region: 'California',
-    country: 'USA',
-    players: [
-      {
-        id: 1,
-        name: 'LeBron James',
-        position: 'SF',
-        team: 'Los Angeles Lakers',
-      },
-      {
-        id: 2,
-        name: 'Anthony Davis',
-        position: 'PF',
-        team: 'Los Angeles Lakers',
-      },
-    ],
-  },
-  {
-    id: '2',
-    name: 'Golden State Warriors',
-    region: 'California',
-    country: 'USA',
-    players: [
-      {
-        id: 3,
-        name: 'Stephen Curry',
-        position: 'PG',
-        team: 'Golden State Warriors',
-      },
-      {
-        id: 4,
-        name: 'Klay Thompson',
-        position: 'SG',
-        team: 'Golden State Warriors',
-      },
-    ],
-  },
-  // Add more mock teams as needed
-];
+const api = new BalldontlieAPI({
+  apiKey: process.env.NEXT_PUBLIC_BALLDONTLIE_API_KEY || '',
+});
+
+interface Team {
+  id: number;
+  conference: string;
+  division: string;
+  city: string;
+  name: string;
+  full_name: string;
+  abbreviation: string;
+}
 
 export default function TeamsList() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPlayersDialogOpen, setIsPlayersDialogOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
-  const [teams, setTeams] = useState(mockTeams); // Use mock data instead of Redux
+  const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleOpenEditModal = (teamId: string) => {
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const teamsResponse = await api.nba.getTeams();
+        console.log('Teams Data:', teamsResponse.data);
+        setTeams(teamsResponse.data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching teams:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchTeams();
+  }, []);
+
+  const handleOpenEditModal = (teamId: number) => {
     setSelectedTeam(teamId);
     setIsEditModalOpen(true);
   };
 
-  const handleOpenDeleteDialog = (teamId: string) => {
+  const handleOpenDeleteDialog = (teamId: number) => {
     setSelectedTeam(teamId);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleOpenPlayersDialog = (teamId: string) => {
+  const handleOpenPlayersDialog = (teamId: number) => {
     setSelectedTeam(teamId);
     setIsPlayersDialogOpen(true);
   };
@@ -109,7 +98,28 @@ export default function TeamsList() {
         </Button>
       </div>
 
-      {teams.length === 0 ? (
+      {loading ? (
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Card key={index}>
+              <CardHeader>
+                <Skeleton className='h-6 w-32' />
+                <Skeleton className='h-4 w-24 mt-2' />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className='h-4 w-20' />
+              </CardContent>
+              <CardFooter className='flex justify-between'>
+                <Skeleton className='h-9 w-24' />
+                <div className='flex gap-2'>
+                  <Skeleton className='h-9 w-9' />
+                  <Skeleton className='h-9 w-9' />
+                </div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : teams.length === 0 ? (
         <div className='text-center py-12 border rounded-lg'>
           <h3 className='text-lg font-medium mb-2'>No teams yet</h3>
           <p className='text-muted-foreground mb-4'>
@@ -125,37 +135,15 @@ export default function TeamsList() {
           {teams.map((team) => (
             <Card key={team.id}>
               <CardHeader>
-                <CardTitle>{team.name}</CardTitle>
+                <CardTitle>{team.full_name}</CardTitle>
                 <CardDescription>
-                  {team.region}, {team.country}
+                  {team.city}, {team.conference} - {team.division}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className='flex items-center gap-2'>
-                  <Users className='h-4 w-4' />
-                  <span>
-                    {team.players.length} player
-                    {team.players.length !== 1 ? 's' : ''}
-                  </span>
+                  <Badge variant='outline'>{team.abbreviation}</Badge>
                 </div>
-                {team.players.length > 0 && (
-                  <div className='mt-2 flex flex-wrap gap-1'>
-                    {team.players.slice(0, 3).map((player) => (
-                      <Badge
-                        key={player.id}
-                        variant='secondary'
-                        className='text-xs'
-                      >
-                        {player.name}
-                      </Badge>
-                    ))}
-                    {team.players.length > 3 && (
-                      <Badge variant='outline' className='text-xs'>
-                        +{team.players.length - 3} more
-                      </Badge>
-                    )}
-                  </div>
-                )}
               </CardContent>
               <CardFooter className='flex justify-between'>
                 <Button
@@ -200,7 +188,7 @@ export default function TeamsList() {
             isOpen={isEditModalOpen}
             onClose={() => setIsEditModalOpen(false)}
             mode='edit'
-            teamId={selectedTeam}
+            teamId={selectedTeam.toString()}
           />
 
           <DeleteTeamDialog
@@ -212,7 +200,7 @@ export default function TeamsList() {
           <TeamPlayersDialog
             isOpen={isPlayersDialogOpen}
             onClose={() => setIsPlayersDialogOpen(false)}
-            teamId={selectedTeam}
+            teamId={selectedTeam.toString()}
           />
         </>
       )}
