@@ -87,12 +87,12 @@ export default function PlayersList() {
   }, []);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || !hasMore) return;
 
     if (observer.current) observer.current.disconnect();
 
     observer.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMore) {
+      if (entries[0].isIntersecting && hasMore && nextCursor !== null) {
         fetchPlayers(nextCursor);
       }
     });
@@ -100,6 +100,10 @@ export default function PlayersList() {
     if (lastPlayerRef.current) {
       observer.current.observe(lastPlayerRef.current);
     }
+
+    return () => {
+      if (observer.current) observer.current.disconnect();
+    };
   }, [loading, hasMore, nextCursor]);
 
   const handleAddToTeam = (player: Player) => {
